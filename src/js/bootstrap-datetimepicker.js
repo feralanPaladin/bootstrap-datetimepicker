@@ -33,6 +33,11 @@
 /*global require:false */
 /*global jQuery:false */
 /*global moment:false */
+
+// OD_Edit _ If block is added to handle body append
+// OD_Edit _ Fake replacement check
+// OD_Edit _ Fixing the positioning issues in the angular ui-grid
+
 (function (factory) {
     'use strict';
     if (typeof define === 'function' && define.amd) {
@@ -416,7 +421,15 @@
                     parent;
 
                 if (options.widgetParent) {
-                    parent = options.widgetParent.append(widget);
+                    // OD_Edit _ If block is added to handle body append
+                    if (options.widgetParent.is('body')) {
+                        position = offset;
+                        options.widgetParent.append(widget);
+                        parent = element.parent();
+                    }
+                    else {
+                        parent = options.widgetParent.append(widget);
+                    }
                 } else if (element.is('input')) {
                     parent = element.after(widget).parent();
                 } else if (options.inline) {
@@ -470,11 +483,13 @@
                     throw new Error('datetimepicker component should be placed within a relative positioned container');
                 }
 
+                // OD_Edit _ Fixing the positioning issues in the angular ui-grid
                 widget.css({
                     top: vertical === 'top' ? 'auto' : position.top + element.outerHeight(),
                     bottom: vertical === 'top' ? position.top + element.outerHeight() : 'auto',
                     left: horizontal === 'left' ? (parent === element ? 0 : position.left) : 'auto',
-                    right: horizontal === 'left' ? 'auto' : parent.outerWidth() - element.outerWidth() - (parent === element ? 0 : position.left)
+                    right: horizontal === 'left' ? 'auto' : $(document).width() - (parent === element ? 0 : position.left)
+                    //right: horizontal === 'left' ? 'auto' : parent.outerWidth() - element.outerWidth() - (parent === element ? 0 : position.left)
                 });
             },
 
@@ -1164,6 +1179,7 @@
             show = function () {
                 ///<summary>Shows the widget. Possibly will emit dp.show and dp.change</summary>
                 var currentMoment,
+                    sfsElementId,
                     useCurrentGranularity = {
                         'year': function (m) {
                             return m.month(0).date(1).hours(0).seconds(0).minutes(0);
@@ -1181,6 +1197,19 @@
                             return m.seconds(0);
                         }
                     };
+
+                // OD_Edit _ Fake replacement check
+                if (options.widgetParent) {
+                    if (options.widgetParent.is('body') && element.is('input')) {
+                        sfsElementId = element.attr('sfs-date-time');
+                        if (sfsElementId) {
+                            if ($('input[sfs-date-time="' + sfsElementId + '"]').length === 0) {
+                                console.warn('Placement element does not exist !');
+                                return picker;
+                            }
+                        }
+                    }
+                }
 
                 if (input.prop('disabled') || (!options.ignoreReadonly && input.prop('readonly')) || widget) {
                     return picker;
